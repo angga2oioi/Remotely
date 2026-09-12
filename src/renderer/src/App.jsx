@@ -4,6 +4,8 @@ import ProjectSwitcher from './components/ProjectSwitcher.jsx'
 import Ec2List from './components/Ec2List.jsx'
 import RunbookManager from './components/RunbookManager.jsx'
 import AgentChat from './components/AgentChat.jsx'
+import ExportBackupModal from './components/ExportBackupModal.jsx'
+import ImportBackupModal from './components/ImportBackupModal.jsx'
 
 const VIEWS = {
   instances: { label: 'EC2 Instances', Component: Ec2List },
@@ -16,6 +18,8 @@ export default function App() {
   const [selectedProjectId, setSelectedProjectId] = useState(null)
   const [activeView, setActiveView] = useState('instances')
   const [showProjectForm, setShowProjectForm] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [bootError, setBootError] = useState(null)
 
@@ -84,6 +88,22 @@ export default function App() {
             ))}
           </ul>
         )}
+
+        <div className="mt-auto flex flex-col gap-1 border-t border-slate-800 pt-4">
+          <p className="px-1 text-xs font-medium uppercase tracking-wide text-slate-500">Backup</p>
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-300 hover:bg-slate-800"
+          >
+            Export All Settings…
+          </button>
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-slate-300 hover:bg-slate-800"
+          >
+            Import All Settings…
+          </button>
+        </div>
       </nav>
 
       <main className="flex-1 overflow-y-auto p-6">
@@ -96,6 +116,14 @@ export default function App() {
           <Component projectId={selectedProjectId} />
         ) : null}
       </main>
+
+      {showExportModal && <ExportBackupModal onClose={() => setShowExportModal(false)} />}
+      {showImportModal && (
+        <ImportBackupModal
+          onClose={() => setShowImportModal(false)}
+          onImported={() => window.location.reload()}
+        />
+      )}
     </div>
   )
 }

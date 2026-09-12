@@ -54,5 +54,34 @@ export const credentialVault = {
     delete store[name]
     await writeVaultFile(store)
     return true
+  },
+
+  /**
+   * Decrypts every stored profile — used only to build a password-encrypted
+   * backup bundle for moving to another device. safeStorage ties its
+   * encryption to this OS user/machine, so the raw vault.json contents are
+   * never portable as-is; the backup re-encrypts with a user password instead.
+   */
+  async exportAll() {
+    const store = await readVaultFile()
+    const result = {}
+    for (const [name, encoded] of Object.entries(store)) {
+      const decrypted = safeStorage.decryptString(Buffer.from(encoded, 'base64'))
+      result[name] = JSON.parse(decrypted)
+    }
+    return result
+  },
+
+  /** Replaces the entire vault with the given plaintext profiles, encrypting each via safeStorage. */
+  async replaceAll(profiles) {
+    if (!safeStorage.isEncryptionAvailable()) {
+      throw new Error('OS-level credential encryption is not available on this machine')
+    }
+    const store = {}
+    for (const [name, credentials] of Object.entries(profiles)) {
+      store[name] = safeStorage.encryptString(JSON.stringify(credentials)).toString('base64')
+    }
+    await writeVaultFile(store)
+    return true
   }
 }

@@ -49,5 +49,14 @@ export const projectStore = {
       projects.filter((p) => p.id !== id)
     )
     return true
+  },
+
+  async exportAll() {
+    return readCollection(PROJECTS_FILE)
+  },
+
+  async replaceAll(projects) {
+    await writeCollection(PROJECTS_FILE, projects)
+    return true
   }
 }

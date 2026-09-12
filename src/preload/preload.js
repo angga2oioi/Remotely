@@ -49,6 +49,10 @@ const api = {
     getSettings: () => ipcRenderer.invoke('agent:getSettings'),
     saveSettings: (settings) => ipcRenderer.invoke('agent:saveSettings', settings),
     interpret: (projectId, messages) => ipcRenderer.invoke('agent:interpret', projectId, messages)
+  },
+  backup: {
+    export: (password) => ipcRenderer.invoke('backup:export', password),
+    import: (password) => ipcRenderer.invoke('backup:import', password)
   }
 }
 

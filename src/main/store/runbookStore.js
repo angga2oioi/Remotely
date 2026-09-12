@@ -55,5 +55,14 @@ export const runbookStore = {
       runbooks.filter((r) => r.projectId !== projectId)
     )
     return true
+  },
+
+  async exportAll() {
+    return readCollection(RUNBOOKS_FILE)
+  },
+
+  async replaceAll(runbooks) {
+    await writeCollection(RUNBOOKS_FILE, runbooks)
+    return true
   }
 }

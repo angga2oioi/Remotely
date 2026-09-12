@@ -37,6 +37,11 @@ remembering the exact sequence of commands.
   at any OpenAI-compatible `chat/completions` endpoint (OpenAI, Azure OpenAI,
   OpenRouter, Ollama, vLLM, a LiteLLM proxy, etc.) with your own base URL, API
   key, and model name — nothing is tied to one vendor.
+- **Backup / move to another device** — export every project (with its AWS
+  credentials), runbook, instance tag, and Agent Mode setting into one file,
+  protected by a password you choose. Import replaces everything on the
+  target device with what's in the file. See [Notes](#notes) for how secrets
+  stay protected across that move.
 
 ## Tech stack
 
@@ -52,7 +57,23 @@ remembering the exact sequence of commands.
 npm install
 npm run dev      # launch with hot reload
 npm run build    # production build to out/
+npm run dist     # package an installer for your OS into release/ (no publishing)
 ```
+
+## Releasing
+
+Installers are built and published from GitHub Actions, manually — go to the
+repo's **Actions** tab → **Release** → **Run workflow**, pick a version bump
+(major/minor/patch), and it will:
+
+1. Bump `version` in `package.json` and commit that to `main`.
+2. Build + package Windows (`.exe`), macOS (`.dmg`/`.zip`), and Linux
+   (`.AppImage`/`.deb`) in parallel, as plain CI artifacts (nothing published yet).
+3. Once all three finish, collect every installer and publish one GitHub
+   Release with all of them attached.
+
+No local signing/publishing setup needed — the workflow only needs the
+repo's built-in `GITHUB_TOKEN`.
 
 ## Architecture
 
@@ -67,6 +88,9 @@ Security-conscious IPC split, standard for Electron apps handling credentials:
   - `store/` — local JSON persistence for projects, runbooks, instance tags,
     and app-wide settings
   - `vault/` — encrypted AWS credential storage (`safeStorage`)
+  - `backup/` — bundles/restores everything above into one password-encrypted
+    file for moving to another device (AES-256-GCM, scrypt-derived key —
+    plain Node `crypto`, no extra dependency)
   - `ipc/` — one `ipcMain.handle` file per domain, registered from `ipc/index.js`
 - **`src/preload/preload.js`** — the only bridge between renderer and main.
   Uses `contextBridge` to expose a fixed `window.api.*` surface over
@@ -93,3 +117,8 @@ Security-conscious IPC split, standard for Electron apps handling credentials:
   (a specific instance id + runbook id), which is always shown back to you
   for explicit confirmation before it actually runs, and any id it invents
   that doesn't match a real instance/runbook is rejected rather than executed.
+- Day-to-day, AWS credentials and the Agent Mode API key are encrypted via
+  `safeStorage`, which ties its encryption to the current OS user/machine —
+  that's why moving to another device needs the explicit backup export/import
+  flow (password-based re-encryption) rather than just copying userData files
+  over; a raw copy would be silently undecryptable on the new machine.

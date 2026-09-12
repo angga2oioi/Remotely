@@ -39,5 +39,14 @@ export const instanceTagStore = {
     record.tags = record.tags.filter((t) => t !== tag)
     await writeCollection(INSTANCE_TAGS_FILE, records)
     return record.tags
+  },
+
+  async exportAll() {
+    return readCollection(INSTANCE_TAGS_FILE)
+  },
+
+  async replaceAll(records) {
+    await writeCollection(INSTANCE_TAGS_FILE, records)
+    return true
   }
 }

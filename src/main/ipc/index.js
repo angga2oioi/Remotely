@@ -5,6 +5,7 @@ import { registerSsmHandlers } from './ssmHandlers.js'
 import { registerInstanceTagHandlers } from './instanceTagHandlers.js'
 import { registerSshHandlers } from './sshHandlers.js'
 import { registerAgentHandlers } from './agentHandlers.js'
+import { registerBackupHandlers } from './backupHandlers.js'
 
 export function registerIpcHandlers() {
   registerProjectHandlers()
@@ -14,4 +15,5 @@ export function registerIpcHandlers() {
   registerInstanceTagHandlers()
   registerSshHandlers()
   registerAgentHandlers()
+  registerBackupHandlers()
 }

@@ -26,5 +26,21 @@ export const appSettingsStore = {
     await fs.mkdir(path.dirname(SETTINGS_FILE), { recursive: true })
     await fs.writeFile(SETTINGS_FILE, encrypted, { mode: 0o600 })
     return next
+  },
+
+  /** Decrypted settings, for building a password-encrypted backup bundle. */
+  async exportAll() {
+    return appSettingsStore.get()
+  },
+
+  /** Overwrites (not merges) the settings with the given plaintext object. */
+  async replaceAll(settings) {
+    if (!safeStorage.isEncryptionAvailable()) {
+      throw new Error('OS-level credential encryption is not available on this machine')
+    }
+    const encrypted = safeStorage.encryptString(JSON.stringify(settings))
+    await fs.mkdir(path.dirname(SETTINGS_FILE), { recursive: true })
+    await fs.writeFile(SETTINGS_FILE, encrypted, { mode: 0o600 })
+    return settings
   }
 }
