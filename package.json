@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Desktop app for managing AWS EC2 instances and executing operational runbooks",
   "main": "./out/main/main.cjs",
-  "author": "Rizka Sanggar Darmawan",
+  "author": "Rizka Sanggar Darmawan <rizka.sanggar@hubbedin.com>",
   "repository": "github:angga2oioi/Remotely",
   "private": true,
   "scripts": {
