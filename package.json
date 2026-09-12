@@ -43,9 +43,6 @@
     "files": [
       "out/**/*"
     ],
-    "publish": {
-      "provider": "github"
-    },
     "win": {
       "target": ["nsis"]
     },
