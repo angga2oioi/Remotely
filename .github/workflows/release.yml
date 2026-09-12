@@ -1,0 +1,38 @@
+name: Release
+
+# Manual only — trigger from the Actions tab (or `gh workflow run release.yml`).
+# Bump "version" in package.json first if you want a distinct release; running
+# again against the same version updates the existing release's assets.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Package and publish
+        run: npx electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # We don't code-sign, so skip electron-builder's certificate
+          # auto-discovery — on Windows this avoids it trying (and
+          # sometimes failing without elevated/Developer Mode privileges)
+          # to prepare macOS code-signing tooling it doesn't actually need.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
