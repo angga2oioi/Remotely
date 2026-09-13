@@ -62,6 +62,25 @@ jobs:
         with:
           node-version: 20
 
+      # Fixed, OS-agnostic cache locations for the Electron/electron-builder
+      # binary downloads (normally under a different path per OS). Caching
+      # these avoids re-downloading ~100MB+ from GitHub's release CDN on
+      # every run, which is both slow and occasionally flaky in CI.
+      - name: Point Electron caches at a cacheable path
+        shell: bash
+        run: |
+          echo "ELECTRON_CACHE=${{ github.workspace }}/.cache/electron" >> "$GITHUB_ENV"
+          echo "ELECTRON_BUILDER_CACHE=${{ github.workspace }}/.cache/electron-builder" >> "$GITHUB_ENV"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}/.cache/electron
+            ${{ github.workspace }}/.cache/electron-builder
+          key: ${{ runner.os }}-electron-cache-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-cache-
+
       - run: npm ci
 
       - run: npm run build
