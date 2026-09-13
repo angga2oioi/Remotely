@@ -1,6 +1,6 @@
 {
   "name": "remotely",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Desktop app for managing AWS EC2 instances and executing operational runbooks",
   "main": "./out/main/main.cjs",
