@@ -13,15 +13,18 @@ remembering the exact sequence of commands.
   live state, and local (in-app only, never sent to AWS) tags for organizing
   and filtering instances.
 - **Runbooks** — save a named shell command sequence once (e.g. "Restart
-  nginx"), then run it against any instance straight from the list via
+  nginx"), global across every project (like Agent Mode's settings — only
+  *running* one is project-scoped, since that needs a specific project's AWS
+  credentials to reach an instance), then run it against any instance
+  straight from the list via
   [AWS Systems Manager Run Command](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-run-command.html) —
   no SSH or PEM key needed at run time.
   - Commands can include `{{variable}}` placeholders — the app prompts for a
     value for each one right before running, so one runbook can be reused
     across different services/hosts/values instead of hardcoding them.
   - Runbooks can be exported/imported as JSON files or via the clipboard to
-    share with teammates or other projects (only the name + commands are
-    included — never credentials or instance ids).
+    share with teammates (only the name + commands are included — never
+    credentials or instance ids).
 - **SSM onboarding** — if an instance isn't yet managed by SSM, the app
   diagnoses why (missing IAM instance profile vs. agent not installed/running)
   and fixes both in one action: it attaches an IAM role with

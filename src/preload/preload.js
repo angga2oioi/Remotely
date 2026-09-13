@@ -17,14 +17,14 @@ const api = {
     delete: (id) => ipcRenderer.invoke('project:delete', id)
   },
   runbook: {
-    list: (projectId) => ipcRenderer.invoke('runbook:list', projectId),
-    create: (projectId, input) => ipcRenderer.invoke('runbook:create', projectId, input),
+    list: () => ipcRenderer.invoke('runbook:list'),
+    create: (input) => ipcRenderer.invoke('runbook:create', input),
     update: (id, patch) => ipcRenderer.invoke('runbook:update', id, patch),
     delete: (id) => ipcRenderer.invoke('runbook:delete', id),
     export: (runbook) => ipcRenderer.invoke('runbook:export', runbook),
-    importFromFile: (projectId) => ipcRenderer.invoke('runbook:importFromFile', projectId),
+    importFromFile: () => ipcRenderer.invoke('runbook:importFromFile'),
     copyToClipboard: (runbook) => ipcRenderer.invoke('runbook:copyToClipboard', runbook),
-    importFromClipboard: (projectId) => ipcRenderer.invoke('runbook:importFromClipboard', projectId)
+    importFromClipboard: () => ipcRenderer.invoke('runbook:importFromClipboard')
   },
   ec2: {
     listInstances: (projectId) => ipcRenderer.invoke('ec2:listInstances', projectId),

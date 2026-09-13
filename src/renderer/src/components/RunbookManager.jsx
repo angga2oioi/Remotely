@@ -15,7 +15,7 @@ function VariablesHint({ script }) {
   )
 }
 
-export default function RunbookManager({ projectId }) {
+export default function RunbookManager() {
   const [runbooks, setRunbooks] = useState([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -28,12 +28,12 @@ export default function RunbookManager({ projectId }) {
   const [editError, setEditError] = useState(null)
 
   async function refresh() {
-    setRunbooks(await window.api.runbook.list(projectId))
+    setRunbooks(await window.api.runbook.list())
   }
 
   useEffect(() => {
     refresh()
-  }, [projectId])
+  }, [])
 
   function flash(message) {
     setNotice(message)
@@ -47,7 +47,7 @@ export default function RunbookManager({ projectId }) {
     try {
       const commands = form.script.split('\n').map((line) => line.trim()).filter(Boolean)
       if (commands.length === 0) throw new Error('Enter at least one command')
-      await window.api.runbook.create(projectId, { name: form.name, commands })
+      await window.api.runbook.create({ name: form.name, commands })
       setForm(emptyForm)
       setShowCreateModal(false)
       await refresh()
@@ -105,7 +105,7 @@ export default function RunbookManager({ projectId }) {
   async function handleImportFromFile() {
     setError(null)
     try {
-      const imported = await window.api.runbook.importFromFile(projectId)
+      const imported = await window.api.runbook.importFromFile()
       if (imported.length > 0) {
         await refresh()
         flash(`Imported ${imported.length} runbook(s)`)
@@ -118,7 +118,7 @@ export default function RunbookManager({ projectId }) {
   async function handleImportFromClipboard() {
     setError(null)
     try {
-      const imported = await window.api.runbook.importFromClipboard(projectId)
+      const imported = await window.api.runbook.importFromClipboard()
       if (imported.length === 0) {
         setError('Clipboard did not contain a valid runbook')
         return
@@ -157,10 +157,10 @@ export default function RunbookManager({ projectId }) {
       </div>
 
       <p className="text-sm text-slate-400">
-        Save a named shell command sequence once, then run it against any instance in this project
+        Save a named shell command sequence once, then run it against any instance in any project
         straight from the EC2 list — no more hunting for the right PEM key or remembering the exact
-        commands. Export or copy a runbook to share it with a teammate or another project; only
-        import runbooks from sources you trust, since they run as-is on your instances.
+        commands. Export or copy a runbook to share it with a teammate; only import runbooks from
+        sources you trust, since they run as-is on your instances.
       </p>
 
       {notice && <p className="text-sm text-emerald-400">{notice}</p>}
@@ -278,7 +278,7 @@ export default function RunbookManager({ projectId }) {
           )
         )}
         {runbooks.length === 0 && (
-          <p className="text-sm text-slate-500">No runbooks yet for this project.</p>
+          <p className="text-sm text-slate-500">No runbooks yet.</p>
         )}
       </div>
     </section>

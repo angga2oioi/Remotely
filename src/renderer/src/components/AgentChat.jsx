@@ -39,7 +39,7 @@ export default function AgentChat({ projectId }) {
   }, [])
 
   useEffect(() => {
-    Promise.all([window.api.ec2.listInstances(projectId), window.api.runbook.list(projectId)])
+    Promise.all([window.api.ec2.listInstances(projectId), window.api.runbook.list()])
       .then(([instanceList, runbookList]) => {
         setInstances(instanceList)
         setRunbooks(runbookList)

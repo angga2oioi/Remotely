@@ -20,11 +20,9 @@ function slugify(name) {
 }
 
 export function registerRunbookHandlers() {
-  ipcMain.handle('runbook:list', (_event, projectId) => runbookStore.list(projectId))
+  ipcMain.handle('runbook:list', () => runbookStore.list())
 
-  ipcMain.handle('runbook:create', (_event, projectId, { name, commands }) =>
-    runbookStore.create(projectId, { name, commands })
-  )
+  ipcMain.handle('runbook:create', (_event, { name, commands }) => runbookStore.create({ name, commands }))
 
   ipcMain.handle('runbook:update', (_event, id, patch) => runbookStore.update(id, patch))
 
@@ -48,8 +46,8 @@ export function registerRunbookHandlers() {
   })
 
   // Accepts one or more runbook JSON files (each a single object or an
-  // array of them) and creates them in the given project.
-  ipcMain.handle('runbook:importFromFile', async (event, projectId) => {
+  // array of them) and adds them to the global runbook library.
+  ipcMain.handle('runbook:importFromFile', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     const { canceled, filePaths } = await dialog.showOpenDialog(window, {
       title: 'Import Runbook',
@@ -65,7 +63,7 @@ export function registerRunbookHandlers() {
       const entries = Array.isArray(parsed) ? parsed : [parsed]
       for (const entry of entries) {
         if (!isValidRunbookEntry(entry)) continue
-        imported.push(await runbookStore.create(projectId, { name: entry.name, commands: entry.commands }))
+        imported.push(await runbookStore.create({ name: entry.name, commands: entry.commands }))
       }
     }
     return imported
@@ -81,8 +79,8 @@ export function registerRunbookHandlers() {
   })
 
   // Reads runbook JSON (single object or array) off the system clipboard
-  // and creates it in the given project.
-  ipcMain.handle('runbook:importFromClipboard', async (_event, projectId) => {
+  // and adds it to the global runbook library.
+  ipcMain.handle('runbook:importFromClipboard', async () => {
     const text = clipboard.readText()
     if (!text.trim()) return []
     const parsed = JSON.parse(text)
@@ -90,7 +88,7 @@ export function registerRunbookHandlers() {
     const imported = []
     for (const entry of entries) {
       if (!isValidRunbookEntry(entry)) continue
-      imported.push(await runbookStore.create(projectId, { name: entry.name, commands: entry.commands }))
+      imported.push(await runbookStore.create({ name: entry.name, commands: entry.commands }))
     }
     return imported
   })

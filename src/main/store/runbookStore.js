@@ -6,21 +6,20 @@ import { readCollection, writeCollection } from './jsonStore.js'
 const RUNBOOKS_FILE = path.join(app.getPath('userData'), 'runbooks.json')
 
 /**
- * A runbook is a named, reusable shell command sequence scoped to a project
- * (e.g. "Restart nginx" -> ["sudo systemctl restart nginx"]), executed
- * against a chosen instance via SSM Run Command instead of SSH + a PEM key.
+ * A runbook is a named, reusable shell command sequence (e.g. "Restart
+ * nginx" -> ["sudo systemctl restart nginx"]), global across every project —
+ * only *running* one is project-scoped (it needs that project's AWS
+ * credentials to reach the target instance via SSM).
  */
 export const runbookStore = {
-  async list(projectId) {
-    const runbooks = await readCollection(RUNBOOKS_FILE)
-    return runbooks.filter((r) => r.projectId === projectId)
+  async list() {
+    return readCollection(RUNBOOKS_FILE)
   },
 
-  async create(projectId, { name, commands }) {
+  async create({ name, commands }) {
     const runbooks = await readCollection(RUNBOOKS_FILE)
     const runbook = {
       id: crypto.randomUUID(),
-      projectId,
       name,
       commands,
       createdAt: new Date().toISOString()
@@ -44,15 +43,6 @@ export const runbookStore = {
     await writeCollection(
       RUNBOOKS_FILE,
       runbooks.filter((r) => r.id !== id)
-    )
-    return true
-  },
-
-  async removeByProject(projectId) {
-    const runbooks = await readCollection(RUNBOOKS_FILE)
-    await writeCollection(
-      RUNBOOKS_FILE,
-      runbooks.filter((r) => r.projectId !== projectId)
     )
     return true
   },

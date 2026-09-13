@@ -1,6 +1,5 @@
 import { ipcMain } from 'electron'
 import { projectStore } from '../store/projectStore.js'
-import { runbookStore } from '../store/runbookStore.js'
 import { credentialVault } from '../vault/credentialVault.js'
 
 export function registerProjectHandlers() {
@@ -23,7 +22,6 @@ export function registerProjectHandlers() {
   ipcMain.handle('project:delete', async (_event, id) => {
     await projectStore.remove(id)
     await credentialVault.deleteProfile(id)
-    await runbookStore.removeByProject(id)
     return true
   })
 }

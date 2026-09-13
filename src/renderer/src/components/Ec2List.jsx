@@ -16,7 +16,7 @@ export default function Ec2List({ projectId }) {
     try {
       const [instanceList, runbookList, tagMap] = await Promise.all([
         window.api.ec2.listInstances(projectId),
-        window.api.runbook.list(projectId),
+        window.api.runbook.list(),
         window.api.instanceTag.listForProject(projectId)
       ])
       setInstances(instanceList)
