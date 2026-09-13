@@ -4,6 +4,7 @@ import { registerEc2Handlers } from './ec2Handlers.js'
 import { registerSsmHandlers } from './ssmHandlers.js'
 import { registerInstanceTagHandlers } from './instanceTagHandlers.js'
 import { registerSshHandlers } from './sshHandlers.js'
+import { registerSshTargetHandlers } from './sshTargetHandlers.js'
 import { registerAgentHandlers } from './agentHandlers.js'
 import { registerBackupHandlers } from './backupHandlers.js'
 
@@ -14,6 +15,7 @@ export function registerIpcHandlers() {
   registerSsmHandlers()
   registerInstanceTagHandlers()
   registerSshHandlers()
+  registerSshTargetHandlers()
   registerAgentHandlers()
   registerBackupHandlers()
 }

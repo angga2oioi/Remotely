@@ -5,7 +5,7 @@ import { extractVariables, applyVariables } from '../lib/runbookVariables.js'
 
 const emptySettingsForm = { baseUrl: 'https://api.openai.com/v1', apiKey: '', model: 'gpt-4o-mini' }
 
-export default function AgentChat({ projectId }) {
+export default function AgentChat({ projectId, projectType = 'aws' }) {
   const [settingsLoaded, setSettingsLoaded] = useState(false)
   const [settings, setSettings] = useState(null) // null = not configured yet, once loaded
   const [showSettingsForm, setShowSettingsForm] = useState(false)
@@ -39,13 +39,15 @@ export default function AgentChat({ projectId }) {
   }, [])
 
   useEffect(() => {
-    Promise.all([window.api.ec2.listInstances(projectId), window.api.runbook.list()])
+    const listResources =
+      projectType === 'ssh' ? window.api.sshTarget.list(projectId) : window.api.ec2.listInstances(projectId)
+    Promise.all([listResources, window.api.runbook.list()])
       .then(([instanceList, runbookList]) => {
         setInstances(instanceList)
         setRunbooks(runbookList)
       })
       .catch((err) => setLoadError(err.message))
-  }, [projectId])
+  }, [projectId, projectType])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -138,11 +140,14 @@ export default function AgentChat({ projectId }) {
     const commands = applyVariables(msg.runbook.commands, variables)
     let outcome
     try {
-      outcome = await window.api.ssm.runAndWait(projectId, {
-        instanceId: msg.instance.id,
-        commands,
-        comment: `Runbook "${msg.runbook.name}" via Remotely Agent`
-      })
+      outcome =
+        projectType === 'ssh'
+          ? await window.api.sshTarget.runAndWait(projectId, { targetId: msg.instance.id, commands })
+          : await window.api.ssm.runAndWait(projectId, {
+              instanceId: msg.instance.id,
+              commands,
+              comment: `Runbook "${msg.runbook.name}" via Remotely Agent`
+            })
     } catch (err) {
       outcome = { status: 'Error', error: err.message }
     }

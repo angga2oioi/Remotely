@@ -2,16 +2,11 @@ import { useEffect, useState } from 'react'
 import ProjectForm from './components/ProjectForm.jsx'
 import ProjectSwitcher from './components/ProjectSwitcher.jsx'
 import Ec2List from './components/Ec2List.jsx'
+import SshTargetList from './components/SshTargetList.jsx'
 import RunbookManager from './components/RunbookManager.jsx'
 import AgentChat from './components/AgentChat.jsx'
 import ExportBackupModal from './components/ExportBackupModal.jsx'
 import ImportBackupModal from './components/ImportBackupModal.jsx'
-
-const VIEWS = {
-  instances: { label: 'EC2 Instances', Component: Ec2List },
-  runbooks: { label: 'Runbooks', Component: RunbookManager },
-  agent: { label: 'Agent Mode', Component: AgentChat }
-}
 
 export default function App() {
   const [projects, setProjects] = useState([])
@@ -46,6 +41,13 @@ export default function App() {
     setShowProjectForm(false)
   }
 
+  function handleProjectDeleted(deletedId) {
+    const remaining = projects.filter((p) => p.id !== deletedId)
+    setProjects(remaining)
+    setSelectedProjectId(remaining[0]?.id ?? null)
+    if (remaining.length === 0) setShowProjectForm(true)
+  }
+
   if (loading) {
     return <div className="flex h-screen items-center justify-center bg-slate-900 text-slate-400">Loading…</div>
   }
@@ -56,6 +58,17 @@ export default function App() {
         Failed to start: {bootError}
       </div>
     )
+  }
+
+  const selectedProject = projects.find((p) => p.id === selectedProjectId)
+  const isSsh = selectedProject?.type === 'ssh'
+
+  const VIEWS = {
+    instances: isSsh
+      ? { label: 'SSH Targets', Component: SshTargetList }
+      : { label: 'EC2 Instances', Component: Ec2List },
+    runbooks: { label: 'Runbooks', Component: RunbookManager },
+    agent: { label: 'Agent Mode', Component: AgentChat }
   }
 
   const { Component } = VIEWS[activeView]
@@ -70,6 +83,7 @@ export default function App() {
           selectedProjectId={selectedProjectId}
           onSelect={setSelectedProjectId}
           onNewProject={() => setShowProjectForm(true)}
+          onDeleted={handleProjectDeleted}
         />
 
         {selectedProjectId && (
@@ -113,7 +127,7 @@ export default function App() {
             onCancel={projects.length > 0 ? () => setShowProjectForm(false) : undefined}
           />
         ) : selectedProjectId ? (
-          <Component projectId={selectedProjectId} />
+          <Component projectId={selectedProjectId} projectType={selectedProject?.type ?? 'aws'} />
         ) : null}
       </main>
 

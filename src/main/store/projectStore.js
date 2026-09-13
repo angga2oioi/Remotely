@@ -5,26 +5,37 @@ import { readCollection, writeCollection } from './jsonStore.js'
 
 const PROJECTS_FILE = path.join(app.getPath('userData'), 'projects.json')
 
+// Projects created before the 'type' field existed default to 'aws'.
+function withDefaultType(project) {
+  return project.type ? project : { ...project, type: 'aws' }
+}
+
 /**
  * Local "projects" are the top-level grouping the UI is organized around —
- * each one owns exactly one AWS credential set (see credentialVault, keyed
- * by project id) and its own set of runbooks.
+ * each one owns exactly one connection profile (see credentialVault, keyed
+ * by project id) and can reach its resources over the transport implied by
+ * `type`: 'aws' (EC2 discovered via the AWS API, commands run via SSM) or
+ * 'ssh' (a manually curated list of hosts, commands run over a direct SSH
+ * connection). Runbooks are shared across all projects regardless of type.
  */
 export const projectStore = {
   async list() {
-    return readCollection(PROJECTS_FILE)
+    const projects = await readCollection(PROJECTS_FILE)
+    return projects.map(withDefaultType)
   },
 
   async get(id) {
     const projects = await readCollection(PROJECTS_FILE)
-    return projects.find((p) => p.id === id) ?? null
+    const project = projects.find((p) => p.id === id)
+    return project ? withDefaultType(project) : null
   },
 
-  async create({ name, region }) {
+  async create({ name, region, type = 'aws' }) {
     const projects = await readCollection(PROJECTS_FILE)
     const project = {
       id: crypto.randomUUID(),
       name,
+      type,
       region,
       createdAt: new Date().toISOString()
     }
@@ -52,7 +63,8 @@ export const projectStore = {
   },
 
   async exportAll() {
-    return readCollection(PROJECTS_FILE)
+    const projects = await readCollection(PROJECTS_FILE)
+    return projects.map(withDefaultType)
   },
 
   async replaceAll(projects) {

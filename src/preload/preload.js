@@ -45,6 +45,13 @@ const api = {
     pickKeyFile: () => ipcRenderer.invoke('ssh:pickKeyFile'),
     bootstrapSsm: (params) => ipcRenderer.invoke('ssh:bootstrapSsm', params)
   },
+  sshTarget: {
+    list: (projectId) => ipcRenderer.invoke('sshTarget:list', projectId),
+    add: (projectId, target) => ipcRenderer.invoke('sshTarget:add', projectId, target),
+    update: (projectId, targetId, patch) => ipcRenderer.invoke('sshTarget:update', projectId, targetId, patch),
+    remove: (projectId, targetId) => ipcRenderer.invoke('sshTarget:remove', projectId, targetId),
+    runAndWait: (projectId, payload) => ipcRenderer.invoke('sshTarget:runAndWait', projectId, payload)
+  },
   agent: {
     getSettings: () => ipcRenderer.invoke('agent:getSettings'),
     saveSettings: (settings) => ipcRenderer.invoke('agent:saveSettings', settings),

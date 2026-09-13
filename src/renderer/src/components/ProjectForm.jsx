@@ -9,6 +9,39 @@ const initialState = {
 }
 
 export default function ProjectForm({ onCreated, onCancel }) {
+  const [type, setType] = useState('aws')
+
+  return (
+    <div className="flex w-full max-w-md flex-col gap-4">
+      <div className="flex gap-2 rounded-md border border-slate-700 bg-slate-800 p-1 text-sm">
+        <button
+          onClick={() => setType('aws')}
+          className={`flex-1 rounded px-3 py-1.5 font-medium ${
+            type === 'aws' ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          AWS (EC2 + SSM)
+        </button>
+        <button
+          onClick={() => setType('ssh')}
+          className={`flex-1 rounded px-3 py-1.5 font-medium ${
+            type === 'ssh' ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          Raw SSH
+        </button>
+      </div>
+
+      {type === 'aws' ? (
+        <AwsProjectForm onCreated={onCreated} onCancel={onCancel} />
+      ) : (
+        <SshProjectForm onCreated={onCreated} onCancel={onCancel} />
+      )}
+    </div>
+  )
+}
+
+function AwsProjectForm({ onCreated, onCancel }) {
   const [form, setForm] = useState(initialState)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -24,6 +57,7 @@ export default function ProjectForm({ onCreated, onCancel }) {
     try {
       const project = await window.api.project.create({
         name: form.name,
+        type: 'aws',
         region: form.region,
         credentials: {
           accessKeyId: form.accessKeyId,
@@ -41,9 +75,7 @@ export default function ProjectForm({ onCreated, onCancel }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-md flex-col gap-3 rounded-lg border border-slate-700 bg-slate-800 p-5">
-      <h2 className="text-base font-semibold text-slate-100">New Project</h2>
-
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-lg border border-slate-700 bg-slate-800 p-5">
       <label className="flex flex-col gap-1 text-sm text-slate-300">
         Project name
         <input
@@ -94,6 +126,68 @@ export default function ProjectForm({ onCreated, onCancel }) {
           value={form.sessionToken}
           onChange={update('sessionToken')}
           className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+        />
+      </label>
+
+      {error && <p className="text-sm text-red-400">{error}</p>}
+
+      <div className="mt-2 flex justify-end gap-2">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-700"
+          >
+            Cancel
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Create Project'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function SshProjectForm({ onCreated, onCancel }) {
+  const [name, setName] = useState('')
+  const [error, setError] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setSaving(true)
+    setError(null)
+    try {
+      const project = await window.api.project.create({ name, type: 'ssh' })
+      setName('')
+      onCreated(project)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-lg border border-slate-700 bg-slate-800 p-5">
+      <p className="text-xs text-slate-400">
+        No cloud account needed — you'll add each host (name, address, SSH key) once the project is
+        created, and run runbooks against them directly over SSH.
+      </p>
+      <label className="flex flex-col gap-1 text-sm text-slate-300">
+        Project name
+        <input
+          required
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Home Lab"
+          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
         />
       </label>
 

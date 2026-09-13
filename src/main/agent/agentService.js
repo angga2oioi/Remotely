@@ -3,11 +3,11 @@ const RUN_RUNBOOK_TOOL = {
   function: {
     name: 'run_runbook',
     description:
-      "Run a previously saved runbook against a specific EC2 instance, both taken from the lists given in context. Only call this when you're confident which instance and which runbook the user means.",
+      "Run a previously saved runbook against a specific target (an EC2 instance or an SSH host, depending on the project), both taken from the lists given in context. Only call this when you're confident which target and which runbook the user means.",
     parameters: {
       type: 'object',
       properties: {
-        instanceId: { type: 'string', description: 'The exact EC2 instance id to target, e.g. i-0123456789abcdef0' },
+        instanceId: { type: 'string', description: 'The exact id of the target to run the runbook against' },
         runbookId: { type: 'string', description: 'The exact id of the runbook to run' },
         variables: {
           type: 'object',
@@ -21,27 +21,31 @@ const RUN_RUNBOOK_TOOL = {
   }
 }
 
-function buildSystemPrompt(instances, runbooks) {
-  const instanceList = instances
-    .map((i) => {
-      const awsTags = (i.tags ?? []).map((t) => `${t.Key}=${t.Value}`).join(', ')
-      const appTags = (i.localTags ?? []).join(', ')
-      return `- id=${i.id} name=${i.name ?? '(unnamed)'} state=${i.state} awsTags=[${awsTags}] appTags=[${appTags}]`
-    })
-    .join('\n')
+function describeResource(resource, resourceType) {
+  if (resourceType === 'ssh') {
+    return `- id=${resource.id} name=${resource.name} connection=${resource.username}@${resource.host}:${resource.port}`
+  }
+  const awsTags = (resource.tags ?? []).map((t) => `${t.Key}=${t.Value}`).join(', ')
+  const appTags = (resource.localTags ?? []).join(', ')
+  return `- id=${resource.id} name=${resource.name ?? '(unnamed)'} state=${resource.state} awsTags=[${awsTags}] appTags=[${appTags}]`
+}
+
+function buildSystemPrompt(resources, runbooks, resourceType) {
+  const resourceLabel = resourceType === 'ssh' ? 'SSH targets' : 'EC2 instances'
+  const resourceList = resources.map((r) => describeResource(r, resourceType)).join('\n')
   const runbookList = runbooks
     .map((r) => `- id=${r.id} name="${r.name}" commands=${JSON.stringify(r.commands)}`)
     .join('\n')
 
-  return `You are an ops assistant embedded in a desktop app called Remotely. The user describes, in plain English, an action to take against one of their EC2 instances using a previously saved runbook (e.g. "restart nginx on the jenkins box").
+  return `You are an ops assistant embedded in a desktop app called Remotely. The user describes, in plain English, an action to take against one of their ${resourceLabel} using a previously saved runbook (e.g. "restart nginx on the jenkins box").
 
-Match their request to the single best instance (by name, tag, or id) and runbook (by name or what its commands do) from the lists below. Only the ids listed below are valid — never invent one.
+Match their request to the single best target (by name, tag, or id) and runbook (by name or what its commands do) from the lists below. Only the ids listed below are valid — never invent one.
 
 If you find a confident, unambiguous match, call the run_runbook tool.
-If nothing matches well, multiple instances/runbooks could plausibly match, or the request is unclear, do NOT call the tool — respond with plain text asking a clarifying question instead. Never guess when unsure, since this triggers a real action on real infrastructure.
+If nothing matches well, multiple targets/runbooks could plausibly match, or the request is unclear, do NOT call the tool — respond with plain text asking a clarifying question instead. Never guess when unsure, since this triggers a real action on real infrastructure.
 
-Available EC2 instances:
-${instanceList || '(none)'}
+Available ${resourceLabel}:
+${resourceList || '(none)'}
 
 Available runbooks:
 ${runbookList || '(none)'}`
@@ -55,10 +59,12 @@ ${runbookList || '(none)'}`
 export const agentService = {
   /**
    * `messages` is the running chat history: [{role: 'user'|'assistant', content: string}].
+   * `resourceType` is the project's type ('aws' or 'ssh'), which only changes how the
+   * target list is described to the model — the tool call shape stays the same.
    * Returns either {type: 'action', instanceId, runbookId, variables} (needs user confirmation
    * before executing) or {type: 'message', text} (a clarifying question or plain reply).
    */
-  async interpret({ baseUrl, apiKey, model, messages, instances, runbooks }) {
+  async interpret({ baseUrl, apiKey, model, messages, instances, runbooks, resourceType }) {
     const url = `${baseUrl.replace(/\/+$/, '')}/chat/completions`
 
     const response = await fetch(url, {
@@ -69,7 +75,7 @@ export const agentService = {
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'system', content: buildSystemPrompt(instances, runbooks) }, ...messages],
+        messages: [{ role: 'system', content: buildSystemPrompt(instances, runbooks, resourceType) }, ...messages],
         tools: [RUN_RUNBOOK_TOOL],
         tool_choice: 'auto'
       })

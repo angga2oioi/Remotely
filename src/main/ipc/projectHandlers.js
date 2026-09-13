@@ -5,9 +5,10 @@ import { credentialVault } from '../vault/credentialVault.js'
 export function registerProjectHandlers() {
   ipcMain.handle('project:list', () => projectStore.list())
 
-  ipcMain.handle('project:create', async (_event, { name, region, credentials }) => {
-    const project = await projectStore.create({ name, region })
-    await credentialVault.saveProfile(project.id, { ...credentials, region })
+  ipcMain.handle('project:create', async (_event, { name, region, type = 'aws', credentials }) => {
+    const project = await projectStore.create({ name, region, type })
+    const vaultEntry = type === 'ssh' ? { targets: [] } : { ...credentials, region }
+    await credentialVault.saveProfile(project.id, vaultEntry)
     return project
   })
 

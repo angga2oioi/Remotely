@@ -4,6 +4,8 @@ import { agentService } from '../agent/agentService.js'
 import { ec2Service } from '../aws/ec2Service.js'
 import { runbookStore } from '../store/runbookStore.js'
 import { instanceTagStore } from '../store/instanceTagStore.js'
+import { projectStore } from '../store/projectStore.js'
+import { sshTargetService } from '../ssh/sshTargetService.js'
 
 export function registerAgentHandlers() {
   ipcMain.handle('agent:getSettings', async () => {
@@ -30,23 +32,33 @@ export function registerAgentHandlers() {
       throw new Error('Agent mode is not configured yet — set an endpoint, API key, and model first.')
     }
 
-    const [instances, runbooks, localTagsByInstance] = await Promise.all([
-      ec2Service.listInstances(projectId),
-      runbookStore.list(projectId),
-      instanceTagStore.listForProject(projectId)
+    const project = await projectStore.get(projectId)
+    if (!project) throw new Error('Unknown project')
+
+    const [instances, runbooks] = await Promise.all([
+      project.type === 'ssh' ? sshTargetService.list(projectId) : listAwsInstancesWithTags(projectId),
+      runbookStore.list()
     ])
-    const instancesWithLocalTags = instances.map((instance) => ({
-      ...instance,
-      localTags: localTagsByInstance[instance.id] ?? []
-    }))
 
     return agentService.interpret({
       baseUrl: agent.baseUrl,
       apiKey: agent.apiKey,
       model: agent.model,
       messages,
-      instances: instancesWithLocalTags,
-      runbooks
+      instances,
+      runbooks,
+      resourceType: project.type
     })
   })
+}
+
+async function listAwsInstancesWithTags(projectId) {
+  const [instances, localTagsByInstance] = await Promise.all([
+    ec2Service.listInstances(projectId),
+    instanceTagStore.listForProject(projectId)
+  ])
+  return instances.map((instance) => ({
+    ...instance,
+    localTags: localTagsByInstance[instance.id] ?? []
+  }))
 }
